@@ -5,34 +5,37 @@ $(document).ready(function(e) {
   //Retrieves each row as a json object, retrieves the properties of it.
   $.get("/todo/")
     .done(function(returnedList){
+      console.log("Attempting to call the database for all list instances.");
       for(let instance of returnedList){//Build the instace from the data then add it to a list based on the complete status.
-        let $item = $('<li class='task-item' id='todo-${instance.id}' data-finished='${instance.complete}'></li>')
+        let $item = $(`<li class='task-item' id='todo-${instance.id}' data-finished='${instance.complete}'></li>`)
         .append('<li><span class="done">%</span>')
         .append(`<span class="title">${item.task}</span>`)
         .append('<span class="delete">x</span>')
-        .append('<span class="edit">r</span></li>');\
+        .append('<span class="edit">r</span></li>');
 
         if(instance.complete){
           $('#completed-list').prepend($newTask);
-
         }
         else{
           $('#todo-list').prepend($newTask);
         }
+        console.log("Succeeded in calling the database.");
       }
     }).fail(function(returnedList){
       $('.warning')
         .empty()
         .append(`<span>${returnedList.responseText}</span>`)
         .show();
+        console.log("Failed to call database.");
     });
 
   //Interactive Button,
   $('#add-todo').button({
-    icons: { primary: "ui-icon-circle-plus" }}).click(
-      function() {
-        $('#new-todo').dialog('open');
-      });
+    icons: { primary: "ui-icon-circle-plus" }})
+    .click( function() {
+      console.log("Pushed new task button.");
+      $('#new-todo').dialog('open');
+  });
 
   //Dialog Box for new entry, also handles posting to the backend database via a posted son object containing the task.
   $('#new-todo').dialog({
@@ -40,26 +43,34 @@ $(document).ready(function(e) {
     title: "Add new Task",
     buttons : {
       "Add task" : function() {
-        let taskName = $('#task').val();
-        if (taskName === '') { return false; }
+        let task = $('#task').val();
+        if (task === '') { return false; }
+        let $newTask = $(task);
         let nT = {
-          task: taskName
+          task: task
         };
-        $.post("/todo/", nT).done(function(returnedInstance)){//Sends the json object to be stored for later in the postgres database. Then it takes the returned id to craft the HTML.
-          let taskHTML = '<li class='task-item' id='todo-${returnedInstance.taskId}' data-finished='${false}'></li>';//id is a generated serial, turned out to be necessary to identify the items row.
+        $.post("/todo/", nT).done(function(returnedInstance){//Sends the json object to be stored for later in the postgres database. Then it takes the returned id to craft the HTML.
+          let taskHTML = `<li class='task-item' id='todo-${returnedInstance.taskId}' data-finished='${false}'></li>`;//id is a generated serial, turned out to be necessary to identify the items row.
           taskHTML += '<li><span class="done">%</span>';
           taskHTML += '<span class="delete">x</span>';
           taskHTML += '<span class="edit">r</span>';
           taskHTML += `<span class="task">${nT.task}</span></li>`;
           $('#todo-list').prepend($newTask);
           $newTask.show('clip',250).effect('highlight',1000);
-        }
-        var $newTask = $(taskHTML);
-        $newTask.find('.task').text(taskName);
-        $newTask.hide();
+          console.log("Successfully posted to database.");
+        }).fail(function(data){
+          $(".warning")
+            .empty()
+            .append(`<span>${data.responseText}</span>`)
+            .show();
+            console.log("Failed to post new task to database.");
+        });
         $(this).dialog('close');
       },
-      "Cancel" : function () { $(this).dialog('close');}
+      "Cancel" : function () {
+        console.log("Cancelled new task add.");
+        $(this).dialog('close');
+      }
     }
   });
 
