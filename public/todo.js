@@ -22,11 +22,7 @@ $(document).ready(function(e) {
         console.log("Succeeded in calling the database.");
       }
     }).fail(function(returnedList){
-      $('.warning')
-        .empty()
-        .append(`<span>${returnedList.responseText}</span>`)
-        .show();
-        console.log("Failed to call database.");
+        console.log(`Failed to post new task to database. Response from server: ${data.responseText}`);
     });
 
   //Interactive Button,
