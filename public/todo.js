@@ -60,11 +60,7 @@ $(document).ready(function(e) {
           $newTask.show('clip',250).effect('highlight',1000);
           console.log("Successfully posted to database.");
         }).fail(function(data){
-          $(".warning")
-            .empty()
-            .append(`<span>${data.responseText}</span>`)
-            .show();
-            console.log("Failed to post new task to database.");
+          console.log(`Failed to post new task to database. Response from server: ${data.responseText}`);
         });
         $(this).dialog('close');
       },
@@ -115,11 +111,7 @@ $(document).ready(function(e) {
         $this.slideDown();
       });
     }).fail(function(data){
-      $(".warning")
-        .empty()
-        .append(`<span>${data.responseText}</span>`)
-        .show();
-        console.log("Failed to update complete status of task in database.");
+        console.log(`Failed to post new task to database. Response from server: ${data.responseText}`);
     });
   });
 
@@ -151,11 +143,7 @@ $(document).ready(function(e) {
           });
         console.log(`Deleted Instance with Id = ${erased.selected}`);
         }).fail(function(data){
-          $(".warning")
-            .empty()
-            .append(`<span>${data.responseText}</span>`)
-            .show();
-            console.log("Failed to delete selected task in database.");
+          console.log(`Failed to post new task to database. Response from server: ${data.responseText}`);
         });
         $(this).dialog('close');
       },
@@ -193,11 +181,7 @@ $(document).ready(function(e) {
           console.log("Updated HTML frontend.");
           fieldVar.children(".title").text(task);
         }).fail(function(data){
-          $(".warning")
-            .empty()
-            .append(`<span>${data.responseText}</span>`)
-            .show();
-            console.log("Failed to update selected task in database.");
+            console.log(`Failed to post new task to database. Response from server: ${data.responseText}`);
         });
         $(this).dialog('close');
       },
