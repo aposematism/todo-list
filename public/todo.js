@@ -1,5 +1,6 @@
 $(document).ready(function(e) {
-  var toDelete;
+  var fieldVar;
+  var currentVar;
 
   //Retrieves all the tasks from the database.
   //Retrieves each row as a json object, retrieves the properties of it.
@@ -7,17 +8,16 @@ $(document).ready(function(e) {
     .done(function(returnedList){
       console.log("Attempting to call the database for all list instances.");
       for(let instance of returnedList){//Build the instace from the data then add it to a list based on the complete status.
-        let $item = $(`<li class='task-item' id='todo-${instance.id}' data-finished='${instance.complete}'></li>`)
-        .append('<li><span class="done">%</span>')
-        .append(`<span class="title">${item.task}</span>`)
+        let $item = $(`<li class='task-item' id='todo-${instance.taskid}' data-finished='${instance.complete}'></li>`)
+        .append('<span class="done">%</span>')
+        .append(`<span class="title">${instance.task}</span>`)
         .append('<span class="delete">x</span>')
-        .append('<span class="edit">r</span></li>');
-
+        .append('<span class="edit">r</span>');
         if(instance.complete){
-          $('#completed-list').prepend($newTask);
+          $('#completed-list').prepend($item);
         }
         else{
-          $('#todo-list').prepend($newTask);
+          $('#todo-list').prepend($item);
         }
         console.log("Succeeded in calling the database.");
       }
@@ -49,12 +49,13 @@ $(document).ready(function(e) {
         let nT = {
           task: task
         };
-        $.post("/todo/", nT).done(function(returnedInstance){//Sends the json object to be stored for later in the postgres database. Then it takes the returned id to craft the HTML.
-          let taskHTML = `<li class='task-item' id='todo-${returnedInstance.taskId}' data-finished='${false}'></li>`;//id is a generated serial, turned out to be necessary to identify the items row.
-          taskHTML += '<li><span class="done">%</span>';
-          taskHTML += '<span class="delete">x</span>';
-          taskHTML += '<span class="edit">r</span>';
-          taskHTML += `<span class="task">${nT.task}</span></li>`;
+        $.post("/todo/", nT).done(function(response){//Sends the json object to be stored for later in the postgres database. Then it takes the returned id to craft the HTML.
+          console.log(response.id);
+          let $newTask = $(`<li class='task-item' id='todo-${response.id}' data-finished='${false}'></li>`)//id is a generated serial, turned out to be necessary to identify the items row.
+          .append('<span class="done">%</span>')
+          .append(`<span class="title">${nT.task}</span>`)
+          .append('<span class="delete">x</span>')
+          .append('<span class="edit">r</span>');
           $('#todo-list').prepend($newTask);
           $newTask.show('clip',250).effect('highlight',1000);
           console.log("Successfully posted to database.");
@@ -74,17 +75,6 @@ $(document).ready(function(e) {
     }
   });
 
-  //Clicking done moves from todo to completed list.
-  $('#todo-list').on('click', '.done', function() {
-    var $taskItem = $(this).parent('li');
-    $taskItem.slideUp(250, function() {
-      var $this = $(this);
-      $this.detach();
-      $('#completed-list').prepend($this);
-      $this.slideDown();
-    });
-  });
-
   //Sorts the items in alphabetical order, applies to both lists independently.
   $('.sortlist').sortable({
     connectWith : '.sortlist',
@@ -93,9 +83,51 @@ $(document).ready(function(e) {
     cancel : '.delete,.done'
   });
 
+  //Clicking done moves from todo to completed list.
+  $('.sortlist').on('click', '.done', function() {
+    var $this = $(this);
+    var fieldVar = $(this).parents("li");
+    let complete = fieldVar.attr("data-finished");
+    let selected = fieldVar.attr("id").slice(5);
+    console.log(complete);
+    console.log(selected);
+    let updated = {
+      complete: complete,
+      selected : selected
+    };
+    $.post("/todo/complete/", updated).done(function(){
+      console.log(`Updated complete status of Instance with Id = ${updated.selected}`);
+      if(complete == 'false'){
+        todoStatus = 'true';
+      }
+      else{
+        todoStatus = 'false';
+      }
+      fieldVar.attr("data-finished", todoStatus).slideUp(250, function () {
+        $this = $(this);
+        $this.detach();
+        if(complete == 'false'){
+          $('#completed-list').prepend(fieldVar);
+        }
+        else{
+          $('#todo-list').prepend(fieldVar);
+        }
+        $this.slideDown();
+      });
+    }).fail(function(data){
+      $(".warning")
+        .empty()
+        .append(`<span>${data.responseText}</span>`)
+        .show();
+        console.log("Failed to update complete status of task in database.");
+    });
+  });
+
   //
   $('.sortlist').on('click','.delete',function() {
-    toDelete = $(this);
+    fieldVar = $(this).parents("li");
+    currentVar = $(this);
+    console.log("Attempting to delete instance.")
     $('#confirm').dialog('open');
   });
 
@@ -105,24 +137,39 @@ $(document).ready(function(e) {
     title: "Delete a Task",
     buttons : {
       "Confirm" : function() {
-        toDelete.parent('li').effect('puff', function() {
-          toDelete.remove();
+        let $instance = fieldVar;
+        let name = $.trim(fieldVar.children(".title").text());
+        let selected = fieldVar.attr("id").slice(5);
+        console.log(selected);
+        let erased = {
+          selected : selected
+        };
+        $.post("/todo/delete/", erased).done(function(){
+          console.log("Deleting instance from view!");
+          fieldVar.effect('puff', function() {
+            currentVar.remove();
+          });
+        console.log(`Deleted Instance with Id = ${erased.selected}`);
+        }).fail(function(data){
+          $(".warning")
+            .empty()
+            .append(`<span>${data.responseText}</span>`)
+            .show();
+            console.log("Failed to delete selected task in database.");
         });
         $(this).dialog('close');
       },
-      "Cancel" : function() { $(this).dialog('close');}
+      "Cancel" : function() {
+        console.log("Cancelled deletion of item.");
+        $(this).dialog('close');
+      }
     }
   });
 
   //Handles edit clicks on todo.
-  $('#todo-list').on('click','.edit',function() {
-    toDelete = $(this);
-    $('#edit').dialog('open');
-  });
-
-  //Handles edit clicks on completed.
-  $('#completed-list').on('click','.edit',function() {
-    toDelete = $(this);
+  $('.sortlist').on('click','.edit',function() {
+    fieldVar = $(this).parents("li");
+    currentVar = $(this);
     $('#edit').dialog('open');
   });
 
@@ -132,9 +179,26 @@ $(document).ready(function(e) {
     title: "Update a Task",
     buttons : {
       "Confirm" : function() {
-        var newName = $('#newTask').val();
-        if (newName === '') { return false; }
-        toDelete.parent('li').find('.task').text(newName);
+        let task = $('#newTask').val();
+        console.log(task);
+        if (task === '') { return false; }
+        let $newTask = $(task);
+        let selected = fieldVar.attr("id").slice(5);
+        console.log(selected);
+        let updatedTask = {
+          task : task,
+          selected : selected
+        };
+        $.post("/todo/update/", updatedTask).done(function(){
+          console.log("Updated HTML frontend.");
+          fieldVar.children(".title").text(task);
+        }).fail(function(data){
+          $(".warning")
+            .empty()
+            .append(`<span>${data.responseText}</span>`)
+            .show();
+            console.log("Failed to update selected task in database.");
+        });
         $(this).dialog('close');
       },
       "Cancel" : function() { $(this).dialog('close');}
