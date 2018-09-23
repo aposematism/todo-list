@@ -43,7 +43,7 @@ $(document).ready(function(e) {
     title: "Add new Task",
     buttons : {
       "Add task" : function() {
-        let task = $('#task').val();
+        let task = $("#task").val();
         if (task === '') { return false; }
         let $newTask = $(task);
         let nT = {
@@ -179,7 +179,7 @@ $(document).ready(function(e) {
     title: "Update a Task",
     buttons : {
       "Confirm" : function() {
-        let task = $('#newTask').val();
+        let task = $("#newTask").val();
         console.log(task);
         if (task === '') { return false; }
         let $newTask = $(task);
