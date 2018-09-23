@@ -4,6 +4,7 @@
   "description": "interactive todo-list",
   "main": "listserver.js",
   "scripts": {
+    "start": "node listserver.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Jordan Milburn",
